@@ -7,9 +7,10 @@ use tower_http::cors::{Any, CorsLayer};
 async fn main() {
     dotenv::dotenv().ok();
 
-    let connection = &mut establish_connection();
+    let pool = establish_connection();
+    let mut connection = pool.get().expect("Failed to get connection from pool");
 
-    match diesel::sql_query("SELECT 1").execute(connection) {
+    match diesel::sql_query("SELECT 1").execute(&mut connection) {
         Ok(_) => println!("Database connection successful!"),
         Err(err) => eprintln!("Error connecting to the database: {:?}", err),
     }
@@ -20,7 +21,7 @@ async fn main() {
         .route("/", get(|| async { "hello, rust" }))
         .layer(cors);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3002").await.unwrap();
     println!("{:?}", listener);
     axum::serve(listener, app).await.unwrap();
 }
